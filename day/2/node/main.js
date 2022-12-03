@@ -20,22 +20,35 @@ var roundData = parsedData.map(function (round) { return round.split(" "); });
 var roundDataWithoutNaN = roundData.slice(0, roundData.length - 1);
 var roundDataValues = roundDataWithoutNaN.map(function (round) {
     var player1 = round[0], player2 = round[1];
-    var player1Value = choiceMatrix[player1];
-    var player2Value = choiceMatrix[player2];
-    if (player1Value === player2Value)
-        return 3 + player2Value;
-    else if (player1Value === 1 && player2Value === 2)
-        return 6 + player2Value;
-    else if (player1Value === 1 && player2Value === 3)
-        return 0 + player2Value;
-    else if (player1Value === 2 && player2Value === 1)
-        return 0 + player2Value;
-    else if (player1Value === 2 && player2Value === 3)
-        return 6 + player2Value;
-    else if (player1Value === 3 && player2Value === 1)
-        return 6 + player2Value;
-    else
-        return 0 + player2Value;
+    switch (player2) {
+        case "X":
+            if (player1 === "A")
+                return 3;
+            else if (player1 === "B")
+                return 1;
+            else
+                return 2;
+        case "Y":
+            return choiceMatrix[player1] + 3;
+        case "Z":
+            if (player1 === "A")
+                return 2 + 6;
+            else if (player1 === "B")
+                return 3 + 6;
+            else
+                return 1 + 6;
+        default:
+            return 0;
+    }
 });
+console.log(roundDataValues.slice(0, 5));
+console.log(roundDataWithoutNaN.slice(0, 5));
+// if (player1Value === player2Value) return 3 + player2Value;
+// else if (player1Value === 1 && player2Value === 2) return 6 + player2Value;
+// else if (player1Value === 1 && player2Value === 3) return 0 + player2Value;
+// else if (player1Value === 2 && player2Value === 1) return 0 + player2Value;
+// else if (player1Value === 2 && player2Value === 3) return 6 + player2Value;
+// else if (player1Value === 3 && player2Value === 1) return 6 + player2Value;
+// else return 0 + player2Value;
 var sumOfAllRoundDataValues = roundDataValues.reduce(function (acc, curr) { return acc + curr; });
 console.log(sumOfAllRoundDataValues);

@@ -19,6 +19,8 @@ fn main() {
         .map(|line| line.split_at(line.len() / 2))
         .collect::<Vec<(&str, &str)>>();
 
+    // part 1 --- duplicated items in backpack
+
     let duplicated_items_in_rucksack = parsed_lines
         .iter()
         .map(|line| {
@@ -44,6 +46,40 @@ fn main() {
         .iter()
         .map(|c| alphabet_hashmap.get(c).unwrap())
         .sum::<usize>();
-
     println!("{:?}", sum_of_duplicated_items);
+
+    // part 2 --- common items in backpack across 3 elves
+
+    let group_of_three_backpacks = lines.chunks(3).collect::<Vec<&[&str]>>();
+
+    let common_item_in_backpack = group_of_three_backpacks
+        .iter()
+        .map(|group| {
+            let mut common_item = String::new();
+            let mut group = group.iter().map(|line| line.chars().collect::<Vec<char>>());
+
+            let first = group.next().unwrap();
+            let second = group.next().unwrap();
+            let third = group.next().unwrap();
+
+            for (_, first_char) in first.iter().enumerate() {
+                for (_, second_char) in second.iter().enumerate() {
+                    for (_, third_char) in third.iter().enumerate() {
+                        if first_char == second_char && second_char == third_char {
+                            common_item.push(*first_char);
+                            break;
+                        }
+                    }
+                }
+            }
+            common_item.chars().nth(0).unwrap()
+        })
+        .collect::<Vec<char>>();
+
+    let sum_of_common_items = common_item_in_backpack
+        .iter()
+        .map(|c| alphabet_hashmap.get(c).unwrap())
+        .sum::<usize>();
+
+    println!("{:?}", sum_of_common_items);
 }

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+// todo result with anyhow
+
 fn main() {
     use std::time::Instant;
     let now = Instant::now();

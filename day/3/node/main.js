@@ -28,6 +28,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 var fs = require("node:fs");
+var hrstart = process.hrtime();
 var input = fs.readFileSync("data.txt", "utf8");
 var lines = String(input.split("\n"));
 var parsedLines = lines.split(",").slice(0, -1);
@@ -105,3 +106,5 @@ var sumOfCommonItems = commonItems.reduce(function (acc, curr) {
     return acc + value;
 }, 0);
 console.log(sumOfCommonItems);
+var hrend = process.hrtime(hrstart);
+console.info("Execution time (hr): %ds %dms", hrend[0], hrend[1] / 1000000);

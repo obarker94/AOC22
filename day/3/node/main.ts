@@ -1,5 +1,7 @@
 import * as fs from "node:fs";
 
+let hrstart = process.hrtime();
+
 const input = fs.readFileSync("data.txt", "utf8");
 const lines = String(input.split("\n"));
 const parsedLines = lines.split(",").slice(0, -1);
@@ -84,3 +86,6 @@ const sumOfCommonItems = commonItems.reduce((acc, curr) => {
 }, 0);
 
 console.log(sumOfCommonItems);
+
+let hrend = process.hrtime(hrstart);
+console.info("Execution time (hr): %ds %dms", hrend[0], hrend[1] / 1000000);

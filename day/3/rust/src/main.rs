@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 fn main() {
+    use std::time::Instant;
+    let now = Instant::now();
     let alphabet = String::from_utf8((b'a'..=b'z').chain(b'A'..=b'Z').collect())
         .unwrap()
         .chars()
@@ -82,4 +84,6 @@ fn main() {
         .sum::<usize>();
 
     println!("{:?}", sum_of_common_items);
+    let elapsed = now.elapsed();
+    println!("Time elapsed in function is: {:?}", elapsed);
 }

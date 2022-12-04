@@ -62,14 +62,14 @@ fn main() {
         .iter()
         .map(|group| {
             let mut common_item = String::new();
-            let mut group = group.iter().map(|line| line.chars().collect::<Vec<char>>());
+            let (first_backpack, second_backpack, third_backpack) = (
+                group[0].chars().collect::<Vec<char>>(),
+                group[1].chars().collect::<Vec<char>>(),
+                group[2].chars().collect::<Vec<char>>(),
+            );
 
-            let first = group.next().unwrap();
-            let second = group.next().unwrap();
-            let third = group.next().unwrap();
-
-            for (_, first_char) in first.iter().enumerate() {
-                if second.contains(first_char) && third.contains(first_char) {
+            for (_, first_char) in first_backpack.iter().enumerate() {
+                if second_backpack.contains(first_char) && third_backpack.contains(first_char) {
                     common_item.push(*first_char);
                     break;
                 }

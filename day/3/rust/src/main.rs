@@ -67,15 +67,12 @@ fn main() {
             let third = group.next().unwrap();
 
             for (_, first_char) in first.iter().enumerate() {
-                for (_, second_char) in second.iter().enumerate() {
-                    for (_, third_char) in third.iter().enumerate() {
-                        if first_char == second_char && second_char == third_char {
-                            common_item.push(*first_char);
-                            break;
-                        }
-                    }
+                if second.contains(first_char) && third.contains(first_char) {
+                    common_item.push(*first_char);
+                    break;
                 }
             }
+            
             common_item.chars().nth(0).unwrap()
         })
         .collect::<Vec<char>>();

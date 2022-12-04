@@ -34,21 +34,23 @@ fn main() {
 
             let mut duplicate_item = String::new();
 
-            for (_, left_char) in left.iter().enumerate() {
-                for (_, right_char) in right.iter().enumerate() {
-                    if left_char == right_char {
-                        duplicate_item.push(*right_char);
-                        break;
-                    }
+            for (left_char, right_char) in left.iter().zip(right.iter()) {
+                if left_char == right_char {
+                    duplicate_item.push(*right_char);
                 }
             }
-            duplicate_item.chars().nth(0).unwrap()
+
+            duplicate_item
         })
-        .collect::<Vec<char>>();
+        .collect::<Vec<String>>();
 
     let sum_of_duplicated_items = duplicated_items_in_rucksack
         .iter()
-        .map(|c| alphabet_hashmap.get(c).unwrap())
+        .map(|item| {
+            item.chars()
+                .map(|c| alphabet_hashmap.get(&c).unwrap())
+                .sum::<usize>()
+        })
         .sum::<usize>();
     println!("{:?}", sum_of_duplicated_items);
 
@@ -72,7 +74,7 @@ fn main() {
                     break;
                 }
             }
-            
+
             common_item.chars().nth(0).unwrap()
         })
         .collect::<Vec<char>>();

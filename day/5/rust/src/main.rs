@@ -1,3 +1,22 @@
+fn split_game_data(data: Vec<String>, section_to_keep: i32) -> Vec<String> {
+    let index = data.iter().position(|r| r == "").unwrap();
+    if section_to_keep == 1 {
+        let game_data = data[..index].to_vec();
+        if game_data[0] == "" {
+            game_data[1..].to_vec()
+        } else {
+            game_data
+                .into_iter()
+                .filter(|line| line.contains("["))
+                .collect()
+        }
+    } else {
+        let game_data = data[index..].to_vec();
+        let first_element_removed = game_data[1..].to_vec();
+        first_element_removed
+    }
+}
+
 #[derive(Debug)]
 struct Instruction {
     mov: i32,
@@ -91,20 +110,17 @@ fn fetch_data(file: &str) -> Result<Vec<String>, &str> {
     return Ok(data_input);
 }
 
+fn get_towers(data: Vec<String>) -> () {
+    println!("{:?}", data);
+}
+
 fn main() {
     let data = match fetch_data("test_input.txt") {
         Ok(data) => data,
         Err(e) => panic!("{}", e),
     };
+    let data_clone = data.clone();
     let instructions = Instruction::new(data);
-    let mut game = Towers::new();
-    game.towers.push(Tower::new());
-    game.towers[0].push("a");
-    game.towers[0].push("b");
-    game.towers[0].push("c");
-    game.towers[1].push("1");
-    game.towers[1].push("2");
-    game.towers[1].push("3");
-
-    println!("{:?}", game);
+    let game_data = split_game_data(data_clone, 0);
+    println!("{:?}", game_data);
 }

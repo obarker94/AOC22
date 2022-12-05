@@ -98,6 +98,11 @@ impl<'a> Towers<'a> {
         let last = self.towers.last_mut().unwrap();
         last.pop()
     }
+
+    fn initialise(&mut self, value: &'a str) {
+        self.towers.push(Tower::new());
+        self.push(value);
+    }
 }
 
 fn fetch_data(file: &str) -> Result<Vec<String>, &str> {
@@ -109,7 +114,35 @@ fn fetch_data(file: &str) -> Result<Vec<String>, &str> {
 }
 
 fn get_towers(data: Vec<String>) -> () {
-    println!("{:?}", data);
+    let game_data = split_game_data(data, 1);
+    let mut split_data = game_data
+        .iter()
+        .map(|x| x.split("").collect::<Vec<&str>>())
+        .collect::<Vec<Vec<&str>>>();
+    // for each split_data remove first and last element
+    split_data = split_data
+        .iter()
+        .map(|x| x[1..x.len() - 1].to_vec())
+        .collect::<Vec<Vec<&str>>>();
+
+    // for each split_data there are 11 elements These are 3 blocks with 1 space in between for
+    // example [" ", " ", " ", " ", "[", "a", "]", " ", " ", " ", " "] should return ["", "a", ""]
+
+    let mut parsed_lines: Vec<Vec<&str>> = vec![];
+
+    for (_, line) in split_data.iter().enumerate() {
+        for (j, element) in line.iter().enumerate() {
+            if element == &"[" {
+                let mut parsed_line: Vec<&str> = vec![];
+                parsed_line.push("");
+                parsed_line.push(line[j + 1]);
+                parsed_line.push("");
+                parsed_lines.push(parsed_line);
+            }
+        }
+    }
+
+    println!("{:?}", parsed_lines);
 }
 
 fn main() {
@@ -119,5 +152,6 @@ fn main() {
     };
     let data_clone = data.clone();
     let instructions = Instruction::new(data);
-    println!("{:?}", instructions);
+    let game_data = get_towers(data_clone);
+    println!("{:?}", game_data);
 }

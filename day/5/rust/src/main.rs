@@ -29,20 +29,58 @@ impl Instruction {
                 Instruction { mov, from, to }
             })
             .collect::<Vec<Instruction>>();
-
-        println!("{:?}", instructions);
-
         instructions
     }
 }
 
-fn line_parser(line: &str) -> Result<Instruction, &str> {
-    let test = Instruction {
-        mov: 0,
-        from: 0,
-        to: 0,
-    };
-    return Ok(test);
+#[derive(Debug)]
+struct Tower<'a> {
+    stack: Vec<&'a str>,
+}
+
+impl<'a> Tower<'a> {
+    fn new() -> Tower<'a> {
+        Tower { stack: vec![] }
+    }
+
+    fn push(&mut self, value: &'a str) {
+        self.stack.push(value);
+    }
+
+    fn pop(&mut self) -> Option<&'a str> {
+        self.stack.pop()
+    }
+
+    fn peek(&self) -> Option<&'a str> {
+        self.stack.last().map(|x| *x)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.stack.is_empty()
+    }
+}
+
+#[derive(Debug)]
+struct Towers<'a> {
+    towers: Vec<Tower<'a>>,
+}
+
+impl<'a> Towers<'a> {
+    fn new() -> Towers<'a> {
+        Towers {
+            towers: vec![Tower::new()],
+        }
+    }
+
+    fn push(&mut self, value: &'a str) {
+        let last = self.towers.last_mut().unwrap();
+        last.push(value);
+    }
+
+    fn pop(&mut self) -> Option<&'a str> {
+        let last = self.towers.last_mut().unwrap();
+        last.pop()
+    }
 }
 
 fn fetch_data(file: &str) -> Result<Vec<String>, &str> {
@@ -58,5 +96,15 @@ fn main() {
         Ok(data) => data,
         Err(e) => panic!("{}", e),
     };
-    let parsed_data = Instruction::new(data);
+    let instructions = Instruction::new(data);
+    let mut game = Towers::new();
+    game.towers.push(Tower::new());
+    game.towers[0].push("a");
+    game.towers[0].push("b");
+    game.towers[0].push("c");
+    game.towers[1].push("1");
+    game.towers[1].push("2");
+    game.towers[1].push("3");
+
+    println!("{:?}", game);
 }

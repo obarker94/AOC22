@@ -26,10 +26,8 @@ struct Instruction {
 
 impl Instruction {
     fn new(data: Vec<String>) -> Vec<Instruction> {
-        let index = data.iter().position(|r| r == "").unwrap();
-        let instructions = data.split_at(index).1;
-        let first_element_removed = instructions[1..].to_vec();
-        let instructions_strings = first_element_removed
+        let game_data = split_game_data(data, 0);
+        let instructions_strings = game_data
             .iter()
             .map(|x| x.split(" ").collect::<Vec<&str>>())
             .collect::<Vec<Vec<&str>>>();
@@ -121,6 +119,5 @@ fn main() {
     };
     let data_clone = data.clone();
     let instructions = Instruction::new(data);
-    let game_data = split_game_data(data_clone, 0);
-    println!("{:?}", game_data);
+    println!("{:?}", instructions);
 }

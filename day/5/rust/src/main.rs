@@ -1,5 +1,3 @@
-use std::mem;
-
 fn split_game_data(data: Vec<String>, section_to_keep: i32) -> Vec<String> {
     let index = data.iter().position(|r| r == "").unwrap();
     if section_to_keep == 1 {
@@ -118,7 +116,6 @@ fn fetch_data(file: &str) -> Result<Vec<String>, &str> {
 
 fn get_towers(data: Vec<String>, instructions: Vec<Instruction>) -> () {
     let game_data = split_game_data(data, 1);
-    // game_data is of type Vec<String>
     let split_data = &game_data
         .iter()
         .map(|x| x.split("").collect::<Vec<&str>>())
@@ -198,7 +195,6 @@ fn get_towers(data: Vec<String>, instructions: Vec<Instruction>) -> () {
 
         let mut ele_to_move: &str = "";
 
-        // move `mov` number of elements from `from - 1` tower and put them on ele_to_move
         for _ in 0..mov {
             ele_to_move = towers.towers[(from - 1) as usize].pop().unwrap();
             towers.towers[(to - 1) as usize].push(ele_to_move);
@@ -209,8 +205,6 @@ fn get_towers(data: Vec<String>, instructions: Vec<Instruction>) -> () {
         println!("{:?}", towers);
     }
 
-    // print the last element of each tower to get the final answer
-    //
     let answer = &towers
         .towers
         .iter()

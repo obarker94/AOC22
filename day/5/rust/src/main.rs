@@ -99,6 +99,10 @@ impl<'a> Towers<'a> {
         last.pop()
     }
 
+    fn remove_x_towers(&mut self, x: usize) {
+        self.towers.truncate(x);
+    }
+
     fn initialise(&mut self, value: &'a str) {
         self.towers.push(Tower::new());
         self.push(value);
@@ -193,15 +197,26 @@ fn get_towers(data: Vec<String>, instructions: Vec<Instruction>) -> () {
     for instruction in instructions {
         let (mov, from, to) = (instruction.mov, instruction.from, instruction.to);
 
-        let mut ele_to_move: &str = "";
+        let mut ele_to_move = "";
+        let mut eles_to_move: Vec<&str> = vec![];
 
         for _ in 0..mov {
             ele_to_move = towers.towers[(from - 1) as usize].pop().unwrap();
-            towers.towers[(to - 1) as usize].push(ele_to_move);
+            eles_to_move.push(ele_to_move);
         }
 
+        eles_to_move.reverse();
+
+        for ele in eles_to_move {
+            towers.towers[(to - 1) as usize].push(ele);
+        }
+
+        // for _ in 0..mov {
+        //     ele_to_move = towers.towers[(from - 1) as usize].pop().unwrap();
+        //     towers.towers[(to - 1) as usize].push(ele_to_move);
+        // }
+
         println!("mov: {}, from: {}, to: {}", mov, from, to);
-        println!("{:?} ele", ele_to_move);
         println!("{:?}", towers);
     }
 
@@ -215,6 +230,8 @@ fn get_towers(data: Vec<String>, instructions: Vec<Instruction>) -> () {
 }
 
 fn main() {
+    use std::time::Instant;
+    let now = Instant::now();
     let data = match fetch_data("input.txt") {
         Ok(data) => data,
         Err(e) => panic!("{}", e),
@@ -222,4 +239,6 @@ fn main() {
     let data_clone = data.clone();
     let instructions = Instruction::new(data);
     let game_data = get_towers(data_clone, instructions);
+    let elapsed = now.elapsed();
+    println!("Time elapsed in function is: {:?}", elapsed);
 }

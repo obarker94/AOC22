@@ -54,7 +54,12 @@ fn packet_checker(stream: RadioStream) -> i32 {
 }
 
 fn main() {
+    let start = std::time::Instant::now();
+
     let stream = RadioStream::new("test_input.txt".to_string());
     let result = packet_checker(stream);
+    let duration = start.elapsed();
+
     println!("{}", result);
+    println!("Time elapsed in expensive_function() is: {:?}", duration);
 }

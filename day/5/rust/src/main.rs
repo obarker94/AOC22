@@ -1,3 +1,5 @@
+use std::mem;
+
 fn split_game_data(data: Vec<String>, section_to_keep: i32) -> Vec<String> {
     let index = data.iter().position(|r| r == "").unwrap();
     if section_to_keep == 1 {
@@ -50,7 +52,7 @@ impl Instruction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Tower<'a> {
     stack: Vec<&'a str>,
 }
@@ -77,7 +79,7 @@ impl<'a> Tower<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Towers<'a> {
     towers: Vec<Tower<'a>>,
 }
@@ -110,29 +112,37 @@ fn fetch_data(file: &str) -> Result<Vec<String>, &str> {
         Ok(data) => data.lines().map(|x| x.to_string()).collect::<Vec<String>>(),
         Err(_) => return Err("Could not read test_input.txt"),
     };
+    println!("Data input: {:?}", data_input);
     return Ok(data_input);
 }
 
-fn get_towers(data: Vec<String>) -> () {
+fn get_towers(data: Vec<String>, instructions: Vec<Instruction>) -> () {
     let game_data = split_game_data(data, 1);
-    let mut split_data = game_data
+    // game_data is of type Vec<String>
+    let split_data = &game_data
         .iter()
         .map(|x| x.split("").collect::<Vec<&str>>())
         .collect::<Vec<Vec<&str>>>();
-    split_data = split_data
+
+    let purged_nulls = &split_data
         .iter()
         .map(|x| x[1..x.len() - 1].to_vec())
         .collect::<Vec<Vec<&str>>>();
 
     let mut raw_lines: Vec<Vec<&str>> = vec![];
 
-    // remove the 4th and 8th element from split data
-    // and push the result to parsed_lines
-
-    for line in split_data {
+    for line in purged_nulls {
         let mut new_line = vec![];
         for (index, element) in line.iter().enumerate() {
-            if index != 3 && index != 7 {
+            if index != 3
+                && index != 7
+                && index != 11
+                && index != 15
+                && index != 19
+                && index != 23
+                && index != 27
+                && index != 31
+            {
                 new_line.push(*element);
             }
         }
@@ -152,15 +162,14 @@ fn get_towers(data: Vec<String>) -> () {
     let mut chunked_data: Vec<Vec<&str>>;
 
     chunked_data = parsed_lines
-        .chunks(3)
+        .chunks(9)
         .map(|x| x.to_vec())
         .collect::<Vec<Vec<&str>>>();
 
     chunked_data.reverse();
-
     let mut remapped_data: Vec<Vec<&str>> = vec![];
 
-    for i in 0..3 {
+    for i in 0..9 {
         let mut new_line = vec![];
         for line in chunked_data.iter() {
             new_line.push(line[i]);
@@ -168,16 +177,55 @@ fn get_towers(data: Vec<String>) -> () {
         remapped_data.push(new_line);
     }
 
-    println!("{:?}", remapped_data);
+    let mut towers = Towers::new();
+
+    for line in remapped_data {
+        for (i, element) in line.iter().enumerate() {
+            if i == 0 {
+                towers.initialise(element);
+            } else {
+                if (element != &" ") {
+                    towers.push(element);
+                }
+            }
+        }
+    }
+
+    towers.towers.remove(0);
+
+    for instruction in instructions {
+        let (mov, from, to) = (instruction.mov, instruction.from, instruction.to);
+
+        let mut ele_to_move: &str = "";
+
+        // move `mov` number of elements from `from - 1` tower and put them on ele_to_move
+        for _ in 0..mov {
+            ele_to_move = towers.towers[(from - 1) as usize].pop().unwrap();
+            towers.towers[(to - 1) as usize].push(ele_to_move);
+        }
+
+        println!("mov: {}, from: {}, to: {}", mov, from, to);
+        println!("{:?} ele", ele_to_move);
+        println!("{:?}", towers);
+    }
+
+    // print the last element of each tower to get the final answer
+    //
+    let answer = &towers
+        .towers
+        .iter()
+        .map(|x| x.peek().unwrap())
+        .collect::<Vec<&str>>();
+
+    println!("{:?}", answer);
 }
 
 fn main() {
-    let data = match fetch_data("test_input.txt") {
+    let data = match fetch_data("input.txt") {
         Ok(data) => data,
         Err(e) => panic!("{}", e),
     };
     let data_clone = data.clone();
     let instructions = Instruction::new(data);
-    let game_data = get_towers(data_clone);
-    println!("{:?}", game_data);
+    let game_data = get_towers(data_clone, instructions);
 }

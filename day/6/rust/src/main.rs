@@ -37,9 +37,8 @@ fn byte_checker(packet: &Vec<char>) -> bool {
     unique
 }
 
-fn packet_checker(stream: RadioStream) -> i32 {
+fn packet_checker(stream: &RadioStream, packet_size: usize) -> i32 {
     let mut _packet_to_check: Vec<char> = Vec::new();
-    let packet_size: usize = 14;
     _packet_to_check = stream.stream[0..packet_size].to_vec();
 
     for i in 0..stream.stream.len() {
@@ -56,10 +55,28 @@ fn packet_checker(stream: RadioStream) -> i32 {
 fn main() {
     let start = std::time::Instant::now();
 
-    let stream = RadioStream::new("test_input.txt".to_string());
-    let result = packet_checker(stream);
+    let stream = RadioStream::new("input.txt".to_string());
+    let part_1 = packet_checker(&stream, 4);
+    let part_2 = packet_checker(&stream, 14);
     let duration = start.elapsed();
 
-    println!("{}", result);
+    println!("Part 1: {}", part_1);
+    println!("Part 2: {}", part_2);
     println!("Time elapsed in expensive_function() is: {:?}", duration);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn char_byte_14() {
+        let stream = RadioStream::new("test_input.txt".to_string());
+        assert_eq!(19, packet_checker(&stream, 14));
+    }
+
+    #[test]
+    fn char_byte_4() {
+        let stream = RadioStream::new("test_input.txt".to_string());
+        assert_eq!(7, packet_checker(&stream, 4));
+    }
 }

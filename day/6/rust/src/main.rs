@@ -23,40 +23,38 @@ impl RadioStream {
     }
 }
 
-fn byte_checker(packet: &Vec<char>) -> bool {
+fn byte_checker(packet: &[char]) -> bool {
     for i in 0..packet.len() {
         for j in i..packet.len() {
-            if i != j {
-                if packet[i] == packet[j] {
-                    return false;
-                }
+            if i != j && packet[i] == packet[j] {
+                return false;
             }
         }
     }
     true
 }
 
-fn packet_checker(stream: &RadioStream, packet_size: usize) -> i32 {
+fn packet_checker(data: &RadioStream, packet_size: usize) -> i32 {
     let mut _packet_to_check: Vec<char> = Vec::new();
-    _packet_to_check = stream.stream[0..packet_size].to_vec();
 
-    for i in 0..stream.stream.len() {
-        if i + packet_size < stream.stream.len() {
-            _packet_to_check = stream.stream[i..i + packet_size].to_vec();
-            if byte_checker(&_packet_to_check) {
+    for i in 0..data.stream.len() {
+        if i + packet_size < data.stream.len() {
+            let slice = &data.stream[i..i + packet_size];
+            if byte_checker(slice) {
                 return i as i32 + packet_size as i32;
             }
         }
     }
+
     return 0;
 }
 
 fn main() {
-    let stream = RadioStream::new("input.txt".to_string());
+    let data = RadioStream::new("input.txt".to_string());
 
     let start = std::time::Instant::now();
-    let part_1 = packet_checker(&stream, 4);
-    let part_2 = packet_checker(&stream, 14);
+    let part_1 = packet_checker(&data, 4);
+    let part_2 = packet_checker(&data, 14);
     let duration = start.elapsed();
 
     println!("Part 1: {}", part_1);

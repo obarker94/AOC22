@@ -24,17 +24,16 @@ impl RadioStream {
 }
 
 fn byte_checker(packet: &Vec<char>) -> bool {
-    let mut unique = true;
     for i in 0..packet.len() {
-        for j in 0..packet.len() {
+        for j in i..packet.len() {
             if i != j {
                 if packet[i] == packet[j] {
-                    unique = false;
+                    return false;
                 }
             }
         }
     }
-    unique
+    true
 }
 
 fn packet_checker(stream: &RadioStream, packet_size: usize) -> i32 {
@@ -53,9 +52,9 @@ fn packet_checker(stream: &RadioStream, packet_size: usize) -> i32 {
 }
 
 fn main() {
-    let start = std::time::Instant::now();
-
     let stream = RadioStream::new("input.txt".to_string());
+
+    let start = std::time::Instant::now();
     let part_1 = packet_checker(&stream, 4);
     let part_2 = packet_checker(&stream, 14);
     let duration = start.elapsed();

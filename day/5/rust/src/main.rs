@@ -36,17 +36,17 @@ fn parse_instruction(line: Vec<String>, index_of_numbers: &Vec<usize>) -> Vec<i3
     let mut numbers = Vec::new();
 
     for i in 0..index_of_numbers.len() {
-        if (i == 0 && index_of_numbers[i] + 1 == index_of_numbers[i + 1]) {
+        if i == 0 && index_of_numbers[i] + 1 == index_of_numbers[i + 1] {
             let merged_number = format!(
                 "{}{}",
                 line[index_of_numbers[i]],
                 line[index_of_numbers[i + 1]]
             );
             numbers.push(merged_number.parse::<i32>().unwrap());
-        } else if (i == 0 && index_of_numbers[1] + 1 != index_of_numbers[i + 1]) {
+        } else if i == 0 && index_of_numbers[1] + 1 != index_of_numbers[i + 1] {
             numbers.push(line[index_of_numbers[i]].parse::<i32>().unwrap());
-        } else if (i + 1 < index_of_numbers.len()
-            && index_of_numbers[i] + 1 == index_of_numbers[i + 1])
+        } else if i + 1 < index_of_numbers.len()
+            && index_of_numbers[i] + 1 == index_of_numbers[i + 1]
         {
             let merged_number = format!(
                 "{}{}",
@@ -67,14 +67,16 @@ fn parse_instruction(line: Vec<String>, index_of_numbers: &Vec<usize>) -> Vec<i3
             }
         }
     }
-    // remove duplicated values from the numbers vector
-    //
 
     let mut unique_numbers = Vec::new();
-    for number in numbers {
-        if !unique_numbers.contains(&number) {
-            unique_numbers.push(number);
+    if numbers.len() > 3 {
+        for number in numbers {
+            if !unique_numbers.contains(&number) {
+                unique_numbers.push(number);
+            }
         }
+    } else {
+        unique_numbers = numbers;
     }
 
     println!("unique_numbers: {:?}", unique_numbers);
@@ -93,7 +95,6 @@ fn read_file(path: &str) -> FileContents {
         let mut line_with_whitespace = line.split("").collect::<Vec<&str>>();
         line_with_whitespace.retain(|&x| x != "");
         line_with_whitespace.push(" ");
-        let mut instruction = Instructions::new(0, 0, 0);
         if number_of_stacks == 0 {
             number_of_stacks = line_with_whitespace.len() / 4;
         }
@@ -114,39 +115,13 @@ fn read_file(path: &str) -> FileContents {
                 }
             }
 
-            // convert line_with_whitespace to a vector of strings
             let mut line_with_whitespace_as_strings = Vec::new();
             for i in 0..line_with_whitespace.len() {
                 line_with_whitespace_as_strings.push(line_with_whitespace[i].to_string());
             }
 
             let output = parse_instruction(line_with_whitespace_as_strings, &index_of_numbers);
-
-            // for i in 0..index_of_numbers.len() {
-            //     // return numbers from index_of_numbers if two elements are next to each other (i.e. 1 and 2)
-            //     if index_of_numbers.len() > i + 1 {
-            //         if index_of_numbers[i] + 1 == index_of_numbers[i + 1] {
-            //             let combined_number = format!(
-            //                 "{}{}",
-            //                 line_with_whitespace[index_of_numbers[i]],
-            //                 line_with_whitespace[index_of_numbers[i + 1]]
-            //             );
-            //             let parsed_number = combined_number.parse::<i32>().unwrap();
-            //
-            //             if i == 0 {
-            //                 instruction.move_piece = parsed_number;
-            //                 println!("Move piece: {}", parsed_number);
-            //             } else if i == 1 {
-            //                 instruction.from = parsed_number;
-            //                 println!("From piece: {}", parsed_number);
-            //             }
-            //             println!(
-            //                 "Found numbers - {} - line - {:?}",
-            //                 parsed_number, line_with_whitespace
-            //             );
-            //         }
-            //     }
-            // }
+            let instruction = Instructions::new(output[0], output[1], output[2]);
             instructions.push(instruction);
         }
     }
@@ -160,9 +135,10 @@ fn read_file(path: &str) -> FileContents {
 
 fn main() {
     let start = std::time::Instant::now();
-    let duration = start.elapsed();
 
     let file = read_file("test_input.txt");
+
+    let duration = start.elapsed();
     println!("{:?}", file);
     println!("Time elapsed in expensive_function() is: {:?}", duration);
 }

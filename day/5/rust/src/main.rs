@@ -1,19 +1,19 @@
 fn split_game_data(data: Vec<String>, section_to_keep: i32) -> Vec<String> {
-    let index = data.iter().position(|r| r == "").unwrap();
+    let index = data.iter().position(|r| r.is_empty()).unwrap();
     if section_to_keep == 1 {
         let game_data = data[..index].to_vec();
-        if game_data[0] == "" {
+        if game_data[0].is_empty() {
             game_data[1..].to_vec()
         } else {
             game_data
                 .into_iter()
-                .filter(|line| line.contains("["))
+                .filter(|line| line.contains('['))
                 .collect()
         }
     } else {
         let game_data = data[index..].to_vec();
-        let first_element_removed = game_data[1..].to_vec();
-        first_element_removed
+        
+        game_data[1..].to_vec()
     }
 }
 
@@ -29,7 +29,7 @@ impl Instruction {
         let game_data = split_game_data(data, 0);
         let instructions_strings = game_data
             .iter()
-            .map(|x| x.split(" ").collect::<Vec<&str>>())
+            .map(|x| x.split(' ').collect::<Vec<&str>>())
             .collect::<Vec<Vec<&str>>>();
         let instructions = instructions_strings
             .iter()
@@ -69,7 +69,7 @@ impl<'a> Tower<'a> {
     }
 
     fn peek(&self) -> Option<&'a str> {
-        self.stack.last().map(|x| *x)
+        self.stack.last().copied()
     }
 
     fn is_empty(&self) -> bool {
@@ -115,10 +115,10 @@ fn fetch_data(file: &str) -> Result<Vec<String>, &str> {
         Err(_) => return Err("Could not read test_input.txt"),
     };
     println!("Data input: {:?}", data_input);
-    return Ok(data_input);
+    Ok(data_input)
 }
 
-fn get_towers(data: Vec<String>, instructions: Vec<Instruction>) -> () {
+fn get_towers(data: Vec<String>, instructions: Vec<Instruction>) {
     let game_data = split_game_data(data, 1);
     let split_data = &game_data
         .iter()
@@ -184,10 +184,8 @@ fn get_towers(data: Vec<String>, instructions: Vec<Instruction>) -> () {
         for (i, element) in line.iter().enumerate() {
             if i == 0 {
                 towers.initialise(element);
-            } else {
-                if (element != &" ") {
-                    towers.push(element);
-                }
+            } else if element != &" " {
+                towers.push(element);
             }
         }
     }
@@ -238,7 +236,7 @@ fn main() {
     };
     let data_clone = data.clone();
     let instructions = Instruction::new(data);
-    let game_data = get_towers(data_clone, instructions);
+    get_towers(data_clone, instructions);
     let elapsed = now.elapsed();
     println!("Time elapsed in function is: {:?}", elapsed);
 }

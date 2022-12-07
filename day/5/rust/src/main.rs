@@ -1,6 +1,6 @@
 use std::fs;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Instructions {
     move_piece: i32,
     from: i32,
@@ -17,7 +17,28 @@ impl Instructions {
     }
 }
 
-#[derive(Debug)]
+fn transpose(matrix: Vec<Vec<char>>) -> Vec<Vec<char>> {
+    let mut transposed = Vec::new();
+    let rows = matrix.len();
+    let cols = matrix[0].len();
+
+    for c in 0..cols {
+        let mut row = Vec::new();
+        for r in 0..rows {
+            row.push(matrix[r][c]);
+        }
+        transposed.push(row);
+    }
+
+    for row in transposed.iter_mut() {
+        row.reverse();
+        row.retain(|&c| c != ' ');
+    }
+
+    transposed
+}
+
+#[derive(Debug, Clone)]
 struct FileContents {
     towers: Vec<Vec<char>>,
     instructions: Vec<Instructions>,
@@ -29,6 +50,69 @@ impl FileContents {
             towers,
             instructions,
         }
+    }
+
+    fn transform(&mut self) {
+        let mut _towers = self.towers.clone();
+        let mapped_towers = transpose(_towers);
+        self.towers = mapped_towers;
+    }
+
+    fn move_crates(&self) -> Vec<char> {
+        let instructions_clone = self.instructions.clone();
+        let mut towers_clone = self.towers.clone();
+        for instruction in instructions_clone {
+            let (mov, from, to) = (instruction.move_piece, instruction.from, instruction.to);
+
+            let mut _ele_to_move: char = ' ';
+
+            // move `mov` number of elements from `from - 1` tower and put them on ele_to_move
+            for _ in 0..mov {
+                _ele_to_move = towers_clone[(from - 1) as usize].pop().unwrap();
+                towers_clone[(to - 1) as usize].push(_ele_to_move);
+            }
+        }
+
+        let mut answer = Vec::new();
+
+        for tower in towers_clone.iter_mut() {
+            let mut _tower = tower.clone();
+            answer.push(_tower.pop().unwrap());
+        }
+
+        answer
+    }
+
+    fn turbo_crate_mover(&self) -> Vec<char> {
+        let instructions_clone = self.instructions.clone();
+        let mut towers_clone = self.towers.clone();
+        for instruction in instructions_clone {
+            let (mov, from, to) = (instruction.move_piece, instruction.from, instruction.to);
+
+            let mut _ele_to_move: char = ' ';
+            let mut _eles_to_move: Vec<char> = Vec::new();
+
+            // move `mov` number of elements from `from - 1` tower and put them on ele_to_move
+            for _ in 0..mov {
+                _ele_to_move = towers_clone[(from - 1) as usize].pop().unwrap();
+                _eles_to_move.push(_ele_to_move);
+            }
+
+            _eles_to_move.reverse();
+
+            for ele in _eles_to_move {
+                towers_clone[(to - 1) as usize].push(ele);
+            }
+        }
+
+        let mut answer = Vec::new();
+
+        for tower in towers_clone.iter_mut() {
+            let mut _tower = tower.clone();
+            answer.push(_tower.pop().unwrap());
+        }
+
+        answer
     }
 }
 
@@ -79,8 +163,6 @@ fn parse_instruction(line: Vec<String>, index_of_numbers: &Vec<usize>) -> Vec<i3
         unique_numbers = numbers;
     }
 
-    println!("unique_numbers: {:?}", unique_numbers);
-
     unique_numbers
 }
 
@@ -88,7 +170,6 @@ fn read_file(path: &str) -> FileContents {
     let contents = fs::read_to_string(path).expect("Something went wrong reading the file");
     let lines = contents.lines().collect::<Vec<&str>>();
     let mut number_of_stacks: usize = 0;
-    println!("Number of stacks: {}", number_of_stacks);
     let mut instructions: Vec<Instructions> = Vec::new();
     let mut towers = Vec::new();
     for line in lines {
@@ -127,8 +208,6 @@ fn read_file(path: &str) -> FileContents {
     }
     towers.pop();
     towers.pop();
-    println!("Number of stacks: {}", number_of_stacks);
-
     let file_contents = FileContents::new(towers, instructions);
     file_contents
 }
@@ -136,10 +215,14 @@ fn read_file(path: &str) -> FileContents {
 fn main() {
     let start = std::time::Instant::now();
 
-    let file = read_file("test_input.txt");
+    let mut file = read_file("input.txt");
+    file.transform();
+    let part_1 = file.move_crates();
+    let part_2 = file.turbo_crate_mover();
+    println!("Part_1: {:?}", part_1);
+    println!("Part_2: {:?}", part_2);
 
     let duration = start.elapsed();
-    println!("{:?}", file);
     println!("Time elapsed in expensive_function() is: {:?}", duration);
 }
 

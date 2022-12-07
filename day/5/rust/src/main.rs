@@ -66,7 +66,6 @@ impl FileContents {
 
             let mut _ele_to_move: char = ' ';
 
-            // move `mov` number of elements from `from - 1` tower and put them on ele_to_move
             for _ in 0..mov {
                 _ele_to_move = towers_clone[(from - 1) as usize].pop().unwrap();
                 towers_clone[(to - 1) as usize].push(_ele_to_move);
@@ -92,7 +91,6 @@ impl FileContents {
             let mut _ele_to_move: char = ' ';
             let mut _eles_to_move: Vec<char> = Vec::new();
 
-            // move `mov` number of elements from `from - 1` tower and put them on ele_to_move
             for _ in 0..mov {
                 _ele_to_move = towers_clone[(from - 1) as usize].pop().unwrap();
                 _eles_to_move.push(_ele_to_move);
@@ -225,4 +223,3 @@ fn main() {
     let duration = start.elapsed();
     println!("Time elapsed in expensive_function() is: {:?}", duration);
 }
-

@@ -1,37 +1,60 @@
-use std::thread;
+use std::collections::HashMap;
 
-fn read_file(path: String) -> Vec<String> {
-    let file = std::fs::read_to_string(path).expect("Unable to read file");
-    let lines = file.lines().map(|s| s.to_string()).collect();
-    lines
+use anyhow::{bail, Context, Ok, Result};
+use slotmap::{new_key_type, SecondaryMap, SlotMap};
+
+new_key_type! { struct DirKey; }
+type DirMap<'a> = SlotMap<DirKey, Directory<'a>>;
+type DirSizeMap<'a> = SecondaryMap<DirKey, u64>;
+
+#[derive(Clone, Debug, Default)]
+struct Directory<'a> {
+    children: HashMap<&'a str, DirKey>,
+    files: Vec<(&'a str, u64)>,
 }
 
-fn is_command(line: &String) -> bool {
-    line.starts_with("$")
+fn update_size(k: DirKey, sm: &DirMap<'_>, sizes: &mut DirSizeMap) -> u64 {
+    let child_keys = sm[k].children.values();
+    let subtree_size: u64 = child_keys.map(|c| update_size(*c, sm, sizes)).sum();
+    let files_size: u64 = sm[k].files.iter().map(|(_, sz)| sz).sum::<u64>();
+    sizes.insert(k, subtree_size + files_size);
+    subtree_size + files_size
 }
 
-fn is_dir(line: &String) -> bool {
-    line.starts_with("dir")
-}
+fn main() -> Result<()> {
+    let input = std::fs::read_to_string("./src/input.txt")?;
+    let start = std::time::Instant::now();
 
-fn execute_command(line: &String) {
-    println!("Executing command: {}", line);
-}
-
-fn process_commands(lines: Vec<String>) {
-    println!("Processing commands");
-    for line in lines {
-        if is_command(&line) {
-            execute_command(&line);
-        } else if is_dir(&line) {
-            println!("Found dir");
-        } else {
-            println!("Found line: {}", line);
+    let mut dirs = DirMap::with_key();
+    let root = dirs.insert(Directory::default());
+    let mut path = Vec::new();
+    let mut command = Vec::with_capacity(3);
+    for line in input.lines() {
+        let cwd = *path.last().unwrap_or(&root);
+        command.splice(.., line.trim().split_ascii_whitespace());
+        match &command[..] {
+            &["$", "cd", "/"] => path.clear(),
+            &["$", "cd", ".."] => drop(path.pop()),
+            &["$", "cd", dir] => path.push(*dirs[cwd].children.get(dir).context("no such dir")?),
+            &["$", "ls"] => {}
+            &["dir", dir] => {
+                let child = dirs.insert(Directory::default());
+                dirs[cwd].children.insert(dir, child);
+            }
+            &[num, dir] => dirs[cwd].files.push((dir, num.parse()?)),
+            _ => bail!("unexpected command {command:?}"),
         }
     }
+
+    let mut sizemap = DirSizeMap::new();
+    update_size(root, &dirs, &mut sizemap);
+    let to_clean_up = sizemap[root].saturating_sub(40_000_000);
+    let part1: u64 = sizemap.values().filter(|sz| **sz <= 100_000).sum();
+    let part2 = sizemap.values().filter(|sz| **sz >= to_clean_up).min();
+
+    println!("part1: {part1}");
+    println!("part2: {}", part2.context("no part2 solution")?);
+    println!("time: {:?}", start.elapsed());
+    Ok(())
 }
 
-fn main() {
-    let lines = read_file("test_input.txt".to_string());
-    process_commands(lines);
-}

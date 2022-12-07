@@ -59,9 +59,8 @@ impl FileContents {
     }
 
     fn move_crates(&self) -> Vec<char> {
-        let instructions_clone = self.instructions.clone();
         let mut towers_clone = self.towers.clone();
-        for instruction in instructions_clone {
+        for instruction in &self.instructions {
             let (mov, from, to) = (instruction.move_piece, instruction.from, instruction.to);
 
             let mut _ele_to_move: char = ' ';
@@ -83,9 +82,8 @@ impl FileContents {
     }
 
     fn turbo_crate_mover(&self) -> Vec<char> {
-        let instructions_clone = self.instructions.clone();
         let mut towers_clone = self.towers.clone();
-        for instruction in instructions_clone {
+        for instruction in &self.instructions {
             let (mov, from, to) = (instruction.move_piece, instruction.from, instruction.to);
 
             let mut _ele_to_move: char = ' ';

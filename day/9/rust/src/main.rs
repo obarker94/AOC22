@@ -182,6 +182,7 @@ fn render_snake(snake: [Pos; 10]) {
 }
 
 fn main() {
+    let time = std::time::Instant::now();
     // TODO
     // if yes, then *tail = std::array::from_fn(|i| tail[i] + (head[i] - tail[i]).signum())
     let input = fs::read_to_string("input.txt").expect("File not readable");
@@ -261,5 +262,9 @@ fn main() {
     }
 
     println!("Answer part 2: {:?}", visited.len());
+
+    let elapsed = time.elapsed();
+
+    println!("Elapsed: {}ms", elapsed.as_millis());
 }
 

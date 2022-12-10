@@ -1,134 +1,265 @@
-#[derive(Debug)]
-struct Command {
-    name: String,
-    value: u8,
+use std::{collections::HashSet, fs};
+
+use itertools::Itertools;
+
+#[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
+struct Pos {
+    x: isize,
+    y: isize,
 }
 
-impl Command {
-    fn new(name: String, value: u8) -> Command {
-        Command { name, value }
-    }
-}
-
-#[derive(Debug)]
-struct Coordinate {
-    x: i8,
-    y: i8,
-}
-
-impl Coordinate {
-    fn new(x: i8, y: i8) -> Coordinate {
-        Coordinate { x, y }
+impl Default for Pos {
+    fn default() -> Self {
+        Self { x: 0, y: 0 }
     }
 }
 
-struct Rope {
-    head: Vec<Coordinate>,
-    tail: Vec<Coordinate>,
-}
-
-impl Rope {
-    fn new() -> Rope {
-        Rope {
-            head: vec![Coordinate::new(0, 0)],
-            tail: vec![Coordinate::new(0, 0)],
-        }
-    }
-
-    fn move_right(&mut self, number: usize) {
-        let rope_len = self.head.len();
-        let new_x = self.head[rope_len - 1].x + number as i8;
-        self.head
-            .push(Coordinate::new(new_x, self.head[rope_len - 1].y));
-    }
-    fn move_left(&mut self, number: usize) {
-        let rope_len = self.head.len();
-        let new_x = self.head[rope_len - 1].x - number as i8;
-        self.head
-            .push(Coordinate::new(new_x, self.head[rope_len - 1].y));
-    }
-    fn move_up(&mut self, number: usize) {
-        let rope_len = self.head.len();
-        let new_y = self.head[rope_len - 1].y + number as i8;
-        self.head
-            .push(Coordinate::new(self.head[rope_len - 1].x, new_y));
-    }
-    fn move_down(&mut self, number: usize) {
-        let rope_len = self.head.len();
-        let new_y = self.head[rope_len - 1].y - number as i8;
-        self.head
-            .push(Coordinate::new(self.head[rope_len - 1].x, new_y));
-    }
-    fn move_head(&mut self, command: Command) {
-        match command.name.as_str() {
-            "R" => self.move_right(command.value as usize),
-            "L" => self.move_left(command.value as usize),
-            "U" => self.move_up(command.value as usize),
-            "D" => self.move_down(command.value as usize),
-            _ => println!("Invalid command"),
-        }
-        println!("Head: {:?}", self.head.last());
-    }
-
-    fn move_tail(&mut self) {
-        let head_len = self.head.len();
-        let head_x = self.head[head_len - 1].x;
-        let head_y = self.head[head_len - 1].y;
-        let tail_len = self.tail.len();
-        let tail_x = self.tail[tail_len - 1].x;
-        let tail_y = self.tail[tail_len - 1].y;
-
-        let x_diff = head_x - tail_x;
-        let y_diff = head_y - tail_y;
-
-        if x_diff != 0 && y_diff != 0 {
-            println!("im diagonal");
-            println!("x_diff: {}", x_diff);
-            println!("y_diff: {}", y_diff);
-        } else if head_x > tail_x {
-            self.tail.push(Coordinate::new(tail_x + x_diff - 1, tail_y));
-        } else if head_x < tail_x {
-            self.tail.push(Coordinate::new(tail_x + x_diff + 1, tail_y));
-        } else if head_y > tail_y {
-            self.tail.push(Coordinate::new(tail_x, tail_y + y_diff - 1));
-        } else if head_y < tail_y {
-            self.tail.push(Coordinate::new(tail_x, tail_y + y_diff + 1));
-        }
-        println!("tail: {:?}", self.tail.last());
+// Grid to the top right
+fn head_move(pos: Pos, step: Step) -> Pos {
+    match step {
+        Step::Right => Pos {
+            x: pos.x + 1,
+            y: pos.y,
+        },
+        Step::Left => Pos {
+            x: pos.x - 1,
+            y: pos.y,
+        },
+        Step::Up => Pos {
+            x: pos.x,
+            y: pos.y + 1,
+        },
+        Step::Down => Pos {
+            x: pos.x,
+            y: pos.y - 1,
+        },
     }
 }
 
-fn read_file(path: &String) -> Vec<Command> {
-    let file = std::fs::read_to_string(&path).expect("Unable to read file");
-    let lines = file
-        .lines()
-        .map(|line| line.to_string())
-        .collect::<Vec<String>>();
+fn tail_move(head_pos: Pos, tail_pos: Pos) -> Pos {
+    // 90 degree shift
 
-    let mut split_lines = Vec::new();
-
-    for line in lines {
-        let split_line = line.split(" ").collect::<Vec<&str>>();
-        let new_command = Command::new(
-            split_line[0].to_string(),
-            split_line[1].parse::<u8>().unwrap(),
-        );
-        split_lines.push(new_command);
+    if head_pos.x - tail_pos.x == 2 && head_pos.y == tail_pos.y {
+        return Pos {
+            x: tail_pos.x + 1,
+            y: tail_pos.y,
+        };
     }
-    split_lines
+
+    if head_pos.x - tail_pos.x == -2 && head_pos.y == tail_pos.y {
+        return Pos {
+            x: tail_pos.x - 1,
+            y: tail_pos.y,
+        };
+    }
+
+    if head_pos.y - tail_pos.y == 2 && head_pos.x == tail_pos.x {
+        return Pos {
+            x: tail_pos.x,
+            y: tail_pos.y + 1,
+        };
+    }
+
+    if head_pos.y - tail_pos.y == -2 && head_pos.x == tail_pos.x {
+        return Pos {
+            x: tail_pos.x,
+            y: tail_pos.y - 1,
+        };
+    }
+
+    // Horse jump shift
+    // Horizontal 2 - vertical 1
+    if head_pos.x - tail_pos.x == 2 && head_pos.y - tail_pos.y == 1 {
+        return Pos {
+            x: tail_pos.x + 1,
+            y: tail_pos.y + 1,
+        };
+    }
+
+    if head_pos.x - tail_pos.x == 2 && head_pos.y - tail_pos.y == -1 {
+        return Pos {
+            x: tail_pos.x + 1,
+            y: tail_pos.y - 1,
+        };
+    }
+
+    if head_pos.x - tail_pos.x == -2 && head_pos.y - tail_pos.y == 1 {
+        return Pos {
+            x: tail_pos.x - 1,
+            y: tail_pos.y + 1,
+        };
+    }
+
+    if head_pos.x - tail_pos.x == -2 && head_pos.y - tail_pos.y == -1 {
+        return Pos {
+            x: tail_pos.x - 1,
+            y: tail_pos.y - 1,
+        };
+    }
+
+    // Vertical 2 - horizontal 1
+
+    if head_pos.y - tail_pos.y == 2 && head_pos.x - tail_pos.x == 1 {
+        return Pos {
+            x: tail_pos.x + 1,
+            y: tail_pos.y + 1,
+        };
+    }
+
+    if head_pos.y - tail_pos.y == 2 && head_pos.x - tail_pos.x == -1 {
+        return Pos {
+            x: tail_pos.x - 1,
+            y: tail_pos.y + 1,
+        };
+    }
+
+    if head_pos.y - tail_pos.y == -2 && head_pos.x - tail_pos.x == 1 {
+        return Pos {
+            x: tail_pos.x + 1,
+            y: tail_pos.y - 1,
+        };
+    }
+
+    if head_pos.y - tail_pos.y == -2 && head_pos.x - tail_pos.x == -1 {
+        return Pos {
+            x: tail_pos.x - 1,
+            y: tail_pos.y - 1,
+        };
+    }
+
+    // Diagonal two
+    if head_pos.x - tail_pos.x == 2 && head_pos.y - tail_pos.y == 2 {
+        return Pos {
+            x: tail_pos.x + 1,
+            y: tail_pos.y + 1,
+        };
+    }
+
+    if head_pos.x - tail_pos.x == 2 && head_pos.y - tail_pos.y == -2 {
+        return Pos {
+            x: tail_pos.x + 1,
+            y: tail_pos.y - 1,
+        };
+    }
+
+    if head_pos.x - tail_pos.x == -2 && head_pos.y - tail_pos.y == 2 {
+        return Pos {
+            x: tail_pos.x - 1,
+            y: tail_pos.y + 1,
+        };
+    }
+
+    if head_pos.x - tail_pos.x == -2 && head_pos.y - tail_pos.y == -2 {
+        return Pos {
+            x: tail_pos.x - 1,
+            y: tail_pos.y - 1,
+        };
+    }
+
+    // Coinciding or diagonal touching
+    return tail_pos;
+}
+
+#[derive(Debug, Copy, Clone)]
+enum Step {
+    Right,
+    Left,
+    Up,
+    Down,
+}
+
+fn do_step(head: Pos, tail: Pos, step: Step) -> (Pos, Pos) {
+    let new_head = head_move(head, step);
+    let new_tail = tail_move(new_head, tail);
+
+    (new_head, new_tail)
+}
+
+fn render_snake(snake: [Pos; 10]) {
+    for i in 0..snake.len() {
+        print!("{} ", snake[i].x);
+    }
 }
 
 fn main() {
-    let time = std::time::Instant::now();
-    let commands = read_file(&String::from("test_input.txt"));
+    // TODO
+    // if yes, then *tail = std::array::from_fn(|i| tail[i] + (head[i] - tail[i]).signum())
+    let input = fs::read_to_string("input.txt").expect("File not readable");
 
-    let mut rope = Rope::new();
+    // Part 1
+    println!("Part 1");
 
-    for command in commands {
-        rope.move_head(command);
-        rope.move_tail();
+    let mut visited: HashSet<Pos> = HashSet::new();
+
+    let mut head = Default::default();
+    let mut tail = Default::default();
+
+    visited.insert(tail);
+
+    for l in input.lines() {
+        let (dir, amount) = l.split(' ').collect_tuple().unwrap();
+
+        let step = match dir {
+            "U" => Step::Up,
+            "D" => Step::Down,
+            "L" => Step::Left,
+            "R" => Step::Right,
+            _ => unimplemented!("Should not happen!"),
+        };
+
+        let amount = str::parse::<isize>(amount).unwrap();
+
+        for _ in 0..amount {
+            (head, tail) = do_step(head, tail, step);
+
+            visited.insert(tail);
+        }
     }
 
-    let time_taken = time.elapsed();
-    println!("Time taken: {:?}", time_taken);
+    println!("Answer part 1: {:?}", visited.len());
+
+    // Part 2
+    println!("Part 2");
+
+    let mut visited: HashSet<Pos> = HashSet::new();
+
+    let mut snake: [Pos; 10] = Default::default();
+
+    visited.insert(snake[9]);
+
+    for l in input.lines() {
+        let (dir, amount) = l.split(' ').collect_tuple().unwrap();
+
+        let step = match dir {
+            "U" => Step::Up,
+            "D" => Step::Down,
+            "L" => Step::Left,
+            "R" => Step::Right,
+            _ => unimplemented!("Should not happen!"),
+        };
+
+        let amount = str::parse::<isize>(amount).unwrap();
+
+        // println!("Move: {amount} in {:?}", step);
+
+        for _ in 0..amount {
+            snake[0] = head_move(snake[0], step);
+            snake[1] = tail_move(snake[0], snake[1]);
+            snake[2] = tail_move(snake[1], snake[2]);
+            snake[3] = tail_move(snake[2], snake[3]);
+            snake[4] = tail_move(snake[3], snake[4]);
+            snake[5] = tail_move(snake[4], snake[5]);
+            snake[6] = tail_move(snake[5], snake[6]);
+            snake[7] = tail_move(snake[6], snake[7]);
+            snake[8] = tail_move(snake[7], snake[8]);
+            snake[9] = tail_move(snake[8], snake[9]);
+
+            render_snake(snake);
+
+            visited.insert(snake[9]);
+        }
+    }
+
+    println!("Answer part 2: {:?}", visited.len());
 }
+

@@ -10,39 +10,91 @@ impl Command {
     }
 }
 
+#[derive(Debug)]
+struct Coordinate {
+    x: i8,
+    y: i8,
+}
+
+impl Coordinate {
+    fn new(x: i8, y: i8) -> Coordinate {
+        Coordinate { x, y }
+    }
+}
+
 struct Rope {
-    head: Vec<usize>,
-    tail: Vec<usize>,
+    head: Vec<Coordinate>,
+    tail: Vec<Coordinate>,
 }
 
 impl Rope {
     fn new() -> Rope {
         Rope {
-            head: Vec::new(),
-            tail: Vec::new(),
+            head: vec![Coordinate::new(0, 0)],
+            tail: vec![Coordinate::new(0, 0)],
         }
     }
 
-    fn move_right(number: usize) {
-        for _ in 0..number {
-            println!("Move right");
-        }
+    fn move_right(&mut self, number: usize) {
+        let rope_len = self.head.len();
+        let new_x = self.head[rope_len - 1].x + number as i8;
+        self.head
+            .push(Coordinate::new(new_x, self.head[rope_len - 1].y));
     }
-    fn move_left(number: usize) {
-        for _ in 0..number {
-            println!("Move left");
-        }
+    fn move_left(&mut self, number: usize) {
+        let rope_len = self.head.len();
+        let new_x = self.head[rope_len - 1].x - number as i8;
+        self.head
+            .push(Coordinate::new(new_x, self.head[rope_len - 1].y));
     }
-    fn move_up(number: usize) {
-        for _ in 0..number {
-            println!("Move up");
-        }
-        println!("move up");
+    fn move_up(&mut self, number: usize) {
+        let rope_len = self.head.len();
+        let new_y = self.head[rope_len - 1].y + number as i8;
+        self.head
+            .push(Coordinate::new(self.head[rope_len - 1].x, new_y));
     }
-    fn move_down(number: usize) {
-        for _ in 0..number {
-            println!("Move down");
+    fn move_down(&mut self, number: usize) {
+        let rope_len = self.head.len();
+        let new_y = self.head[rope_len - 1].y - number as i8;
+        self.head
+            .push(Coordinate::new(self.head[rope_len - 1].x, new_y));
+    }
+    fn move_head(&mut self, command: Command) {
+        match command.name.as_str() {
+            "R" => self.move_right(command.value as usize),
+            "L" => self.move_left(command.value as usize),
+            "U" => self.move_up(command.value as usize),
+            "D" => self.move_down(command.value as usize),
+            _ => println!("Invalid command"),
         }
+        println!("Head: {:?}", self.head.last());
+    }
+
+    fn move_tail(&mut self) {
+        let head_len = self.head.len();
+        let head_x = self.head[head_len - 1].x;
+        let head_y = self.head[head_len - 1].y;
+        let tail_len = self.tail.len();
+        let tail_x = self.tail[tail_len - 1].x;
+        let tail_y = self.tail[tail_len - 1].y;
+
+        let x_diff = head_x - tail_x;
+        let y_diff = head_y - tail_y;
+
+        if x_diff != 0 && y_diff != 0 {
+            println!("im diagonal");
+            println!("x_diff: {}", x_diff);
+            println!("y_diff: {}", y_diff);
+        } else if head_x > tail_x {
+            self.tail.push(Coordinate::new(tail_x + x_diff - 1, tail_y));
+        } else if head_x < tail_x {
+            self.tail.push(Coordinate::new(tail_x + x_diff + 1, tail_y));
+        } else if head_y > tail_y {
+            self.tail.push(Coordinate::new(tail_x, tail_y + y_diff - 1));
+        } else if head_y < tail_y {
+            self.tail.push(Coordinate::new(tail_x, tail_y + y_diff + 1));
+        }
+        println!("tail: {:?}", self.tail.last());
     }
 }
 
@@ -70,14 +122,11 @@ fn main() {
     let time = std::time::Instant::now();
     let commands = read_file(&String::from("test_input.txt"));
 
+    let mut rope = Rope::new();
+
     for command in commands {
-        match command.name.as_str() {
-            "R" => Rope::move_right(command.value as usize),
-            "L" => Rope::move_left(command.value as usize),
-            "U" => Rope::move_up(command.value as usize),
-            "D" => Rope::move_down(command.value as usize),
-            _ => println!("Unknown command"),
-        }
+        rope.move_head(command);
+        rope.move_tail();
     }
 
     let time_taken = time.elapsed();

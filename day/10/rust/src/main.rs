@@ -31,35 +31,32 @@ impl ElfComputer {
     }
 
     fn run(&mut self, max_cycles: usize) -> i32 {
-        let mut cycles = 0;
-        while cycles < max_cycles {
+        self.cycle = 0;
+        while self.cycle < max_cycles {
             let command = self.program[self.command_number].clone();
-            println!("Cycle: {}, command: {:?}", cycles, command);
             match command.operation.as_str() {
                 "addx" => {
-                    cycles += 1;
+                    self.cycle += 1;
                     for _ in 0..1 {
-                        if cycles < max_cycles {
-                            cycles += 1;
+                        if self.cycle < max_cycles {
+                            self.cycle += 1;
                         } else {
                             break;
                         }
                     }
 
                     self.command_number += 1;
-                    if cycles == max_cycles {
+                    if self.cycle == max_cycles {
                         break;
                     }
                     self.signal += command.value.unwrap();
                 }
                 "noop" => {
-                    cycles += 1;
+                    self.cycle += 1;
                     self.command_number += 1;
-                    println!("Cycle: {} - noop", cycles);
                 }
                 _ => panic!("Unknown operation"),
             }
-            self.cycle += 1;
             if self.command_number == self.program.len() {
                 break;
             }
@@ -90,10 +87,22 @@ fn read_file(path: String) -> Vec<Command> {
 }
 
 fn main() {
-    let lines = read_file("test_input.txt".to_string());
-    let mut computer = ElfComputer::new(lines);
-    computer.run(220);
-    println!("Signal: {}", computer.signal);
+    let time = std::time::Instant::now();
+    let lines = read_file("input.txt".to_string());
+    let cycles_to_analyze = vec![20, 60, 100, 140, 180, 220];
+
+    let mut sum = 0;
+
+    for cycles in cycles_to_analyze {
+        let mut computer = ElfComputer::new(lines.clone());
+        let signal = computer.run(cycles);
+        sum += signal;
+        println!("Signal after {} cycles: {}", cycles, signal);
+    }
+
+    println!("Sum of signals: {}", sum);
+    let elapsed = time.elapsed();
+    println!("Time elapsed in expensive_function() is: {:?}", elapsed);
 }
 
 #[cfg(test)]

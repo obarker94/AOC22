@@ -1,161 +1,193 @@
-use std::fs;
+use itertools::Itertools;
+use std::{
+    collections::VecDeque,
+    fmt::{self, Result},
+    fs,
+};
 
-#[derive(Debug, Clone)]
-struct Command {
-    operation: String,
-    value: Option<i32>,
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+enum Instruction {
+    Noop,
+    Addx(isize),
 }
 
-impl Command {
-    fn new(operation: String, value: Option<i32>) -> Command {
-        Command { operation, value }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct ElfComputer {
-    program: Vec<Command>,
-    command_number: usize,
-    cycle: usize,
-    signal: i32,
-}
-
-impl ElfComputer {
-    fn new(program: Vec<Command>) -> ElfComputer {
-        ElfComputer {
-            program,
-            command_number: 0,
-            cycle: 0,
-            signal: 1,
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result {
+        match self {
+            Self::Noop => write!(f, "noop"),
+            Self::Addx(x) => write!(f, "addx {}", x),
         }
     }
+}
 
-    fn run(&mut self, max_cycles: usize) -> i32 {
-        self.cycle = 0;
-        while self.cycle < max_cycles {
-            let command = self.program[self.command_number].clone();
-            match command.operation.as_str() {
-                "addx" => {
-                    self.cycle += 1;
-                    for _ in 0..1 {
-                        if self.cycle < max_cycles {
-                            self.cycle += 1;
-                        } else {
+struct VideoSystem {
+    cycle: isize,
+
+    register_X: isize,
+
+    instructions: VecDeque<Instruction>,
+    current_instruction: Instruction,
+    add_turns: usize,
+
+    signal_strength_accumulator: isize,
+
+    crt: [char; 240],
+}
+
+impl fmt::Display for VideoSystem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result {
+        write!(
+            f,
+            "Cycle: {}, X: {} (curr: {}, add_turns: {}, sig: {})",
+            self.cycle,
+            self.register_X,
+            self.current_instruction,
+            self.add_turns,
+            self.signal_strength_accumulator
+        )
+    }
+}
+
+impl VideoSystem {
+    fn run(&mut self) {
+        loop {
+            // Print current state
+            // println!("Start/ {}", self);
+
+            // Begin execution
+            match self.current_instruction {
+                Instruction::Noop => {
+                    if let Some(i) = self.instructions.pop_front() {
+                        self.current_instruction = i;
+
+                        match self.current_instruction {
+                            Instruction::Addx(x) => {
+                                self.add_turns = 2;
+                            }
+                            Instruction::Noop => {}
+                        }
+                    } else {
+                        if self.add_turns == 0 {
                             break;
                         }
                     }
+                }
+                Instruction::Addx(_) => {
+                    if self.add_turns == 0 {
+                        if let Some(i) = self.instructions.pop_front() {
+                            self.current_instruction = i;
 
-                    self.command_number += 1;
-                    if self.cycle == max_cycles {
-                        break;
+                            match self.current_instruction {
+                                Instruction::Addx(x) => {
+                                    self.add_turns = 2;
+                                }
+                                Instruction::Noop => {}
+                            }
+                        } else {
+                            if self.add_turns == 0 {
+                                break;
+                            }
+                        }
                     }
-                    self.signal += command.value.unwrap();
                 }
-                "noop" => {
-                    self.cycle += 1;
-                    self.command_number += 1;
-                }
-                _ => panic!("Unknown operation"),
             }
-            if self.command_number == self.program.len() {
-                break;
-            }
-        }
-        self.signal = self.signal * max_cycles as i32;
-        self.signal
-    }
-}
 
-fn read_file(path: String) -> Vec<Command> {
-    let file = fs::read_to_string(path).expect("Incorrect file type");
-    let lines = file
-        .lines()
-        .map(|line| {
-            let mut split = line.split(" ");
-            let operation = match split.next() {
-                Some(op) => op.to_string(),
-                None => panic!("Incorrect file format"),
-            };
-            let value = match split.next() {
-                Some(val) => Some(val.parse::<i32>().unwrap()),
-                None => None,
-            };
-            Command::new(operation, value)
-        })
-        .collect::<Vec<Command>>();
-    lines
+            // Perform side effects
+            if ((self.cycle as isize) - 20) % 40 == 0 {
+                // println!(
+                //     "Signal strength at cycle {} is {}",
+                //     self.cycle,
+                //     self.cycle * self.register_X
+                // );
+
+                self.signal_strength_accumulator += self.cycle * self.register_X;
+            }
+
+            if (self.cycle - 1) % 40 == self.register_X - 1
+                || (self.cycle - 1) % 40 == self.register_X
+                || (self.cycle - 1) % 40 == self.register_X + 1
+            {
+                // println!("Drawing '#' in pos: {}", self.cycle - 1);
+
+                self.crt[usize::try_from(self.cycle - 1).unwrap()] = '#';
+            } else {
+                // println!("Drawing '.' in pos: {}", self.cycle - 1);
+            }
+
+            // println!(
+            //     "Current CRT row: {}",
+            //     &self.crt[..40].iter().collect::<String>()
+            // );
+
+            // Complete execution
+            match self.current_instruction {
+                Instruction::Noop => {}
+                Instruction::Addx(x) => {
+                    if self.add_turns == 1 {
+                        self.register_X += x;
+                    }
+                }
+            }
+
+            // Decrement cycle counter
+            if self.add_turns > 0 {
+                self.add_turns -= 1;
+            }
+
+            // println!("End/ {}", self);
+            // println!("");
+
+            self.cycle += 1;
+        }
+    }
 }
 
 fn main() {
-    let time = std::time::Instant::now();
-    let lines = read_file("input.txt".to_string());
-    let cycles_to_analyze = vec![20, 60, 100, 140, 180, 220];
+    use std::time::Instant;
+    let now = Instant::now();
 
-    let mut sum = 0;
+    let input = fs::read_to_string("input.txt").expect("File not readable");
 
-    for cycles in cycles_to_analyze {
-        let mut computer = ElfComputer::new(lines.clone());
-        let signal = computer.run(cycles);
-        sum += signal;
-        println!("Signal after {} cycles: {}", cycles, signal);
+    let mut instructions: VecDeque<Instruction> = input
+        .lines()
+        .map(|l| {
+            let instruction = &l[..4];
+
+            match instruction {
+                "noop" => Instruction::Noop,
+                "addx" => {
+                    let (_, amount) = l.split(" ").collect_tuple().unwrap();
+                    Instruction::Addx(str::parse::<isize>(amount).unwrap())
+                }
+                _ => unimplemented!("Should not happen!"),
+            }
+        })
+        .collect();
+    // println!("{:?}", instructions);
+
+    // Part 1
+
+    let mut v = VideoSystem {
+        cycle: 1,
+        register_X: 1,
+        instructions: instructions.clone(),
+        current_instruction: Instruction::Noop,
+        add_turns: 0,
+        signal_strength_accumulator: 0,
+        crt: ['.'; 240],
+    };
+
+    v.run();
+
+    println!("Answer part 1: {:?}", v.signal_strength_accumulator);
+
+    println!("Answer part 2");
+
+    for cs in v.crt.chunks(40) {
+        println!("{}", cs.iter().collect::<String>());
     }
 
-    println!("Sum of signals: {}", sum);
-    let elapsed = time.elapsed();
-    println!("Time elapsed in expensive_function() is: {:?}", elapsed);
+    let elapsed = now.elapsed();
+    println!("Elapsed: {:.2?}", elapsed);
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_20_lines() {
-        let lines = read_file("test_input.txt".to_string());
-        let mut computer = ElfComputer::new(lines);
-
-        computer.run(20);
-        assert_eq!(computer.signal, 420);
-    }
-
-    #[test]
-    fn test_60_lines() {
-        let lines = read_file("test_input.txt".to_string());
-        let mut computer = ElfComputer::new(lines);
-
-        computer.run(60);
-        assert_eq!(computer.signal, 1140);
-    }
-
-    #[test]
-    fn test_100_lines() {
-        let lines = read_file("test_input.txt".to_string());
-        let mut computer = ElfComputer::new(lines);
-
-        computer.run(100);
-        assert_eq!(computer.signal, 1800);
-    }
-    #[test]
-    fn test_140_lines() {
-        let lines = read_file("test_input.txt".to_string());
-        let mut computer = ElfComputer::new(lines);
-
-        computer.run(140);
-        assert_eq!(computer.signal, 2940);
-    }
-    #[test]
-    fn test_180_lines() {
-        let lines = read_file("test_input.txt".to_string());
-        let mut computer = ElfComputer::new(lines);
-        computer.run(180);
-        assert_eq!(computer.signal, 2880);
-    }
-    #[test]
-    fn test_220_lines() {
-        let lines = read_file("test_input.txt".to_string());
-        let mut computer = ElfComputer::new(lines);
-
-        computer.run(220);
-        assert_eq!(computer.signal, 3960);
-    }
-}
